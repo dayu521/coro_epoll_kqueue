@@ -7,7 +7,8 @@ using std::coroutine_handle;
 using std::suspend_always;
 using std::suspend_never;
 
-template<typename T> struct task;
+template <typename T> struct task;
+struct task2;
 
 namespace detail {
 
@@ -51,6 +52,12 @@ struct promise_type<void> final: promise_type_base<void> {
     task<void> get_return_object();
 };
 
+template<typename T>
+struct promise_type_base_want: promise_type_base<T>{
+  suspend_never initial_suspend() { return {}; }
+  task2 get_return_object();
+};
+
 } // namespace detail
 
 template<typename T = void>
@@ -75,6 +82,10 @@ struct task {
     coroutine_handle<promise_type> handle_;
 };
 
+struct task2 : task<void> {
+  using promise_type = detail::promise_type_base_want<void>;
+};
+
 namespace detail {
 template<typename T>
 inline task<T> promise_type<T>::get_return_object() {
@@ -83,5 +94,10 @@ inline task<T> promise_type<T>::get_return_object() {
 
 inline task<void> promise_type<void>::get_return_object() {
     return task<void>{ coroutine_handle<promise_type<void>>::from_promise(*this)};
+}
+
+template<typename T>
+inline task2 promise_type_base_want<T>::get_return_object() {
+    return task2{ };
 }
 }
